@@ -84,43 +84,40 @@ A atividade consiste no desenvolvimento de um **semáforo inteligente** como par
 
 ---
 
-### **4. Estrutura do Código**
+### 4. Estrutura do Código
 
-O código está dividido em partes principais para maior clareza e organização.
+O código foi estruturado para ser modular e organizado, facilitando manutenção e escalabilidade. As principais seções incluem:
 
 #### 4.1 Configuração de Pinos e Conexão WiFi
+Os pinos do ESP32 foram configurados para controlar os LEDs dos semáforos e o sensor LDR. A conexão WiFi utiliza credenciais definidas no código e suporta comunicação segura via MQTT com o HiveMQ.
 
-Os pinos do ESP32 foram configurados para controlar os LEDs e o sensor LDR. A conexão WiFi foi configurada com credenciais fornecidas, e a biblioteca MQTT foi usada para integração com o HiveMQ.
-
-```c++
-// Configurações da rede WiFi
-const char* ssid = "Marco_Ruas";
-const char* password = "12345678";
+```cpp
+const char* ssid = "Marco_Ruas";          // Nome da rede WiFi
+const char* password = "12345678";        // Senha da rede WiFi
+const char* mqtt_server = "hivemq.cloud"; // Endereço do broker MQTT
 ```
 
-#### 4.2 Controle do Semáforo
+#### 4.2 Classe para Controle dos Semáforos
+Foi criada uma classe para encapsular os métodos de controle dos estados do semáforo (verde, amarelo e vermelho). A modularidade permite reaproveitamento do código para múltiplos semáforos.
 
-Cada semáforo é gerenciado por uma classe que controla os estados (vermelho, amarelo, verde). Essa abordagem modular facilita a reutilização do código.
-
-```c++
+```cpp
 class Semaforo {
   private:
     short int vermelho, amarelo, verde;
   public:
     Semaforo(short int pinoVerm, short int pinoVerde, short int pinoAmar);
-    void abrir();
-    void esperar();
-    void fechar();
-    void desligarTodos();
-    void alternarAmarelo();
+    void abrir();          // Ativa o LED verde
+    void esperar();        // Ativa o LED amarelo
+    void fechar();         // Ativa o LED vermelho
+    void desligarTodos();  // Desativa todos os LEDs
+    void alternarAmarelo();// Alterna o estado do LED amarelo (modo noturno)
 };
 ```
 
 #### 4.3 Modo Noturno
+O modo noturno é ativado automaticamente com base na leitura do LDR ou manualmente via mensagens MQTT. Durante este modo, os LEDs amarelos piscam alternadamente para sinalizar tráfego reduzido.
 
-O modo noturno é ativado automaticamente com base nos valores do sensor LDR ou manualmente via MQTT.
-
-```c++
+```cpp
 void iniciarModoNoturno() {
   modoNoturno = true;
   timerSemaforo.detach();
@@ -131,15 +128,47 @@ void iniciarModoNoturno() {
 }
 ```
 
-#### 4.4 Conectividade MQTT
+#### 4.4 Controle do Ciclo dos Semáforos
+O ciclo dos semáforos (verde, amarelo, vermelho) é gerenciado por uma máquina de estados. Cada estado possui uma duração configurável e transições controladas por um `Ticker`.
 
-O sistema utiliza o HiveMQ para envio e recebimento de mensagens, permitindo controle remoto e integração com a interface.
-
-```c++
-client.subscribe("hivemqdemo/commands"); // Tópico para comandos
-client.publish("hivemqdemo/ldr", ldrString.c_str()); // Dados do LDR
+```cpp
+void gerenciarEstadoSemaforo() {
+  switch (estadoAtual) {
+    case SEMAFORO1_VERDE:
+      semaforo1.abrir();
+      semaforo2.fechar();
+      estadoAtual = SEMAFORO1_AMARELO;
+      timerSemaforo.once(3, gerenciarEstadoSemaforo);
+      break;
+    case SEMAFORO1_AMARELO:
+      semaforo1.esperar();
+      estadoAtual = SEMAFORO1_VERMELHO;
+      timerSemaforo.once(1, gerenciarEstadoSemaforo);
+      break;
+    // Outros estados...
+  }
+}
 ```
 
+#### 4.5 Conectividade MQTT
+A integração com o HiveMQ permite controle remoto e transmissão de dados do sensor LDR. Mensagens MQTT podem ativar/desativar modos ou alterar estados manualmente.
+
+```cpp
+client.subscribe("hivemqdemo/commands");        // Tópico para comandos
+client.publish("hivemqdemo/ldr", ldrString.c_str()); // Publica valor do LDR
+```
+
+#### 4.6 Integração com o Sensor LDR
+O sensor LDR monitora a presença de veículos e a iluminação ambiente. Valores do LDR influenciam a ativação do modo noturno ou ajustes no comportamento dos semáforos.
+
+```cpp
+int valorLDR = analogRead(PINO_LDR);
+if (valorLDR <= 2000) {
+  iniciarModoNoturno();  // Baixa luminosidade: ativa modo noturno
+} else {
+  pararModoNoturno();    // Alta luminosidade: retorna ao modo normal
+}
+```
 ---
 
 ### **5. Conexão com Ubidots**
@@ -149,14 +178,22 @@ client.publish("hivemqdemo/ldr", ldrString.c_str()); // Dados do LDR
 
 ---
 
-### **6. Resultados Esperados**
+### 6. Funcionamento Previsto
 
-#### Modo Normal:
-- O semáforo alterna entre estados verde, amarelo e vermelho com base em tempos programados.
-- A detecção de veículos pelo LDR é exibida no Ubidots e pode influenciar os tempos do semáforo.
+**Modo Normal**:  
+Os semáforos alternam automaticamente entre verde, amarelo e vermelho com tempos programados, ajustando o fluxo de acordo com a presença de veículos detectada pelo sensor LDR. Os dados captados são enviados ao Ubidots para visualização remota.
 
-#### Modo Noturno:
-- Os LEDs amarelos piscam alternadamente, indicando menor atividade no tráfego.
+**Modo Noturno**:  
+Os LEDs amarelos piscam alternadamente, indicando menor atividade no tráfego. Este modo é ativado automaticamente com base nos valores do LDR ou manualmente via MQTT.
 
-#### Interface Online:
-- O dashboard permite alternar manualmente entre os modos (normal/noturno) e forçar a abertura de um semáforo específico.
+**Modo Forçado Semáforo 1**:  
+Permite manter o semáforo 1 (verde) aberto forçadamente enquanto o semáforo 2 permanece fechado (vermelho). Este estado pode ser ativado manualmente pela interface MQTT.
+
+**Modo Forçado Semáforo 2**:  
+Mantém o semáforo 2 (verde) aberto e o semáforo 1 fechado (vermelho), também ativado manualmente via MQTT.
+
+---
+
+### Conclusão
+
+O projeto explora a inovação no gerenciamento de tráfego urbano, proporcionando quatro modos operacionais para diferentes cenários: fluxo automático, tráfego reduzido e controle manual. Essa abordagem integrada de sensores, conectividade MQTT e visualização em tempo real via Ubidots demonstra o potencial de soluções inteligentes para cidades modernas, otimizando eficiência e segurança no trânsito.
