@@ -80,7 +80,7 @@ A atividade consiste no desenvolvimento de um **semáforo inteligente** como par
 #### Software:
 - Arduino IDE para programação do ESP32.
 - Biblioteca WiFi e MQTT para conectividade.
-- Plataforma Ubidots para visualização de dados.
+- Plataforma Ubidots 
 
 ---
 
