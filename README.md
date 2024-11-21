@@ -30,12 +30,12 @@
 
 ## 🚦 Semáforo Inteligente
 
-Imagine uma cidade onde os semáforos não apenas controlam o tráfego, mas também se comunicam entre si, ajustando o fluxo de veículos de forma inteligente e eficiente. Essa é a visão de uma Smart City, e é exatamente o que você e seu grupo irão explorar nesta atividade. Vocês serão os engenheiros responsáveis por criar um semáforo inteligente, capaz de detectar a presença de veículos através de um sensor de luz (LDR) e adaptar seu comportamento automaticamente para diferentes condições, como o "modo noturno".
+&nbsp;&nbsp;&nbsp;&nbsp;Imagine uma cidade onde os semáforos não apenas controlam o tráfego, mas também se comunicam entre si, ajustando o fluxo de veículos de forma inteligente e eficiente. Essa é a visão de uma Smart City, e é exatamente o que você e seu grupo irão explorar nesta atividade. Vocês serão os engenheiros responsáveis por criar um semáforo inteligente, capaz de detectar a presença de veículos através de um sensor de luz (LDR) e adaptar seu comportamento automaticamente para diferentes condições, como o "modo noturno".
 
 
 ## 📁 Estrutura de pastas
 
-Dentre os arquivos e pastas presentes na raiz do projeto, definem-se:
+&nbsp;&nbsp;&nbsp;&nbsp;Dentre os arquivos e pastas presentes na raiz do projeto, definem-se:
 
 - <b>assets</b>: aqui estão os arquivos relacionados a parte gráfica do projeto, ou seja, as imagens e vídeos que os representam (O logo do grupo pode ser adicionado nesta pasta).
 
@@ -43,13 +43,13 @@ Dentre os arquivos e pastas presentes na raiz do projeto, definem-se:
 
 - <b>README.md</b>: arquivo que serve como guia e explicação geral sobre a atividade (o mesmo que você está lendo agora).
 
-- <b>funcionamento.mp4</b>: arquivo que mostra o funcionamento da atividade em vídeo.
+- <b>funcionamento.mp4</b>: arquivo que mostra o funcionamento da atividade em vídeo (ou, caso prefira, aqui tem o [link](https://drive.google.com/file/d/1fu7WHAePawhNuxph-hXarNaO0yAXaZWI/view?usp=sharing) que dá acesso ao vídeo).
 
 ## 📝 Documentação
 
 ### **1. Descrição do Projeto**
 
-A atividade consiste no desenvolvimento de um **semáforo inteligente** como parte da visão de uma Smart City. O semáforo é capaz de detectar a presença de veículos por meio de um sensor de luminosidade (LDR) e adaptar-se automaticamente para diferentes condições com seus diferentes modos, como o **modo noturno**. Adicionalmente, o sistema possui integração com a nuvem (MQTT) para comunicação centralizada e visualização remota dos dados e estados.
+&nbsp;&nbsp;&nbsp;&nbsp;A atividade consiste no desenvolvimento de um **semáforo inteligente** como parte da visão de uma Smart City. O semáforo é capaz de detectar a presença de veículos por meio de um sensor de luminosidade (LDR) e adaptar-se automaticamente para diferentes condições com seus diferentes modos, como o **modo noturno**. Adicionalmente, o sistema possui integração com a nuvem (MQTT) para comunicação centralizada e visualização remota dos dados e estados.
 
 ---
 
@@ -86,10 +86,10 @@ A atividade consiste no desenvolvimento de um **semáforo inteligente** como par
 
 ### **4. Estrutura do Código**
 
-O código foi estruturado para ser modular e organizado, facilitando manutenção e escalabilidade. Abaixo estão as principais seções:
+&nbsp;&nbsp;&nbsp;&nbsp;O código foi estruturado para ser modular e organizado. Abaixo estão as principais seções:
 
 #### 4.1. Configuração de Pinos e Conexão WiFi
-Os pinos do ESP32 foram configurados para controlar os LEDs dos semáforos e o sensor LDR. A conexão WiFi utiliza credenciais definidas no código e suporta comunicação segura via MQTT com o HiveMQ.
+&nbsp;&nbsp;&nbsp;&nbsp;Os pinos do ESP32 foram configurados para controlar os LEDs dos semáforos e o sensor LDR. A conexão WiFi utiliza credenciais definidas no código e suporta comunicação segura via MQTT com o HiveMQ.
 
 ```cpp
 const char* ssid = "Zoin";          // Nome da rede WiFi
@@ -98,7 +98,7 @@ const char* mqtt_server = "706f3a6885be461ea18a14eeca8916ee.s1.eu.hivemq.cloud";
 ```
 
 #### 4.2. Classe para Controle dos Semáforos
-Foi criada uma classe para encapsular os métodos de controle dos estados do semáforo (verde, amarelo e vermelho). A modularidade permite reaproveitamento do código para múltiplos semáforos.
+&nbsp;&nbsp;&nbsp;&nbsp;Foi criada uma classe para encapsular os métodos de controle dos estados do semáforo (verde, amarelo e vermelho). A modularidade permite reaproveitamento do código para múltiplos semáforos.
 
 ```cpp
 class Semaforo {
@@ -106,21 +106,21 @@ class Semaforo {
     short int vermelho, amarelo, verde;
   public:
     Semaforo(short int pinoVerm, short int pinoVerde, short int pinoAmar);
-    void abrir();          // Ativa o LED verde
-    void esperar();        // Ativa o LED amarelo
-    void fechar();         // Ativa o LED vermelho
-    void desligarTodos();  // Desativa todos os LEDs
-    void alternarAmarelo();// Alterna o estado do LED amarelo (modo noturno)
+    void abrir();               // Ativa o LED verde
+    void esperar();             // Ativa o LED amarelo
+    void fechar();              // Ativa o LED vermelho
+    void desligarTodos();       // Desativa todos os LEDs
+    void alternarAmarelo();     // Alterna o estado do LED amarelo (modo noturno)
 };
 ```
 
 #### 4.3. Controle do Ciclo dos Semáforos
-Os estados dos semáforos são controlados por meio de uma enumeração `EstadoSemaforo`, que define claramente os possíveis estados do sistema: `SEMAFORO1_VERDE`, `SEMAFORO1_AMARELO`, `SEMAFORO1_VERMELHO`, e assim por diante. Isso facilita a expansão e manutenção do código.
+&nbsp;&nbsp;&nbsp;&nbsp;Os estados dos semáforos são controlados por meio de uma enumeração `EstadoSemaforo`, que define claramente os possíveis estados do sistema: `SEMAFORO1_VERDE`, `SEMAFORO1_AMARELO`, `SEMAFORO1_VERMELHO`, e assim por diante. Isso facilita a expansão e manutenção do código.
 
-Os tempos de transição entre os estados do semáforo são controlados por meio da biblioteca `Ticker`, garantindo uma temporização não bloqueante. Além disso, o `Ticker` também é utilizado para gerenciar o pisca-pisca dos LEDs amarelos no modo noturno.
+&nbsp;&nbsp;&nbsp;&nbsp;Os tempos de transição entre os estados do semáforo são controlados por meio da biblioteca `Ticker`, garantindo uma temporização não bloqueante. Além disso, o `Ticker` também é utilizado para gerenciar o pisca-pisca dos LEDs amarelos no modo noturno.
 
 #### 4.4. Modo Noturno
-O modo noturno pode ser ativado automaticamente com base no valor do sensor LDR (luminosidade menor ou igual a 100) ou manualmente via comando MQTT (`noturno`). Durante este modo, os LEDs amarelos piscam alternadamente para sinalizar tráfego reduzido.
+&nbsp;&nbsp;&nbsp;&nbsp;O modo noturno pode ser ativado automaticamente com base no valor do sensor LDR (luminosidade menor ou igual a 100) ou manualmente via comando MQTT (`noturno`). Durante este modo, os LEDs amarelos piscam alternadamente para sinalizar tráfego reduzido.
 
 ```cpp
 void iniciarModoNoturno() {
@@ -133,15 +133,15 @@ void iniciarModoNoturno() {
 }
 ```
 
-Da mesma forma, o modo normal é restaurado automaticamente quando a luminosidade aumenta ou manualmente com o comando MQTT (`normal`).
+&nbsp;&nbsp;&nbsp;&nbsp;Da mesma forma, o modo normal é restaurado automaticamente quando a luminosidade aumenta ou manualmente com o comando MQTT (`normal`).
 
 #### 4.5. Controle Manual dos Semáforos
-Os modos `semaforo1` e `semaforo2` permitem forçar um dos semáforos a permanecer no estado "verde", enquanto o outro é mantido no estado "vermelho". Esses modos são ativados via mensagens MQTT nos seguintes formatos:
+&nbsp;&nbsp;&nbsp;&nbsp;Os modos `semaforo1` e `semaforo2` permitem forçar um dos semáforos a permanecer no estado "verde", enquanto o outro é mantido no estado "vermelho". Esses modos são ativados via mensagens MQTT nos seguintes formatos:
 - **Mensagem:** `semaforo1` - Mantém o Semáforo 1 aberto.
 - **Mensagem:** `semaforo2` - Mantém o Semáforo 2 aberto.
 
 #### 4.6. Publicação e Assinatura de Tópicos MQTT
-O sistema utiliza o HiveMQ para enviar e receber mensagens. Os valores do sensor LDR são publicados no tópico `hivemqdemo/commands`. Comandos para os semáforos também são enviados ao mesmo tópico.
+&nbsp;&nbsp;&nbsp;&nbsp;O sistema utiliza o HiveMQ para enviar e receber mensagens. Os valores do sensor LDR são publicados no tópico `hivemqdemo/commands`. Comandos para os semáforos também são enviados ao mesmo tópico.
 
 ```cpp
 client.subscribe("hivemqdemo/commands");        // Tópico para comandos
@@ -149,7 +149,7 @@ client.publish("hivemqdemo/commands", ldrString.c_str()); // Publica valor do LD
 ```
 
 #### 4.7. Integração com o Sensor LDR
-O sensor LDR monitora a presença de veículos e a iluminação ambiente. Valores do LDR influenciam a ativação do modo noturno ou ajustes no comportamento dos semáforos.
+&nbsp;&nbsp;&nbsp;&nbsp;O sensor LDR monitora a presença de veículos e a iluminação ambiente. Valores do LDR influenciam a ativação do modo noturno ou ajustes no comportamento dos semáforos.
 
 ```cpp
 int valorLDR = analogRead(PINO_LDR);
@@ -180,4 +180,10 @@ if (valorLDR <= 100) {
 ---
 
 ### **6. Conexão com Ubidots**
-Cada semáforo está conectado a um ESP32 que envia dados captados pelo sensor LDR para o Ubidots. A plataforma é configurada permitir ajustes nos estados dos semáforos e visualização remota.
+&nbsp;&nbsp;&nbsp;&nbsp;Cada semáforo está conectado a um ESP32 que envia dados captados pelo sensor LDR para o Ubidots. A plataforma é configurada permitir ajustes nos estados dos semáforos e visualização remota.
+
+--- 
+
+### 7. **Video demonstrando o funcionamento dos semáforos**
+
+&nbsp;&nbsp;&nbsp;&nbsp;[Link do video clicando aqui](https://drive.google.com/file/d/1fu7WHAePawhNuxph-hXarNaO0yAXaZWI/view?usp=sharing)
