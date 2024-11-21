@@ -53,51 +53,51 @@ A atividade consiste no desenvolvimento de um **semáforo inteligente** como par
 
 ---
 
-### **2. Objetivos do Projeto**
+### **2. Objetivos**
 
-1. **Parte 1: Montagem Física e Programação com LDR e Modo Noturno**
-   - Criar dois semáforos controlados por um ESP32.
-   - Implementar o sensor de luminosidade (LDR) para detecção de veículos e adaptação automática ao modo noturno.
+#### Parte 1: Montagem Física e Programação com LDR e Modo Noturno
+- Criar dois semáforos controlados por um ESP32.
+- Implementar o sensor de luminosidade (LDR) para detecção de veículos e adaptação automática ao modo noturno.
 
-2. **Parte 2: Configuração da Interface Online**
-   - Desenvolver uma interface que permita ajustar o comportamento dos semáforos, visualizar os dados captados pelo LDR e ativar/desativar o modo noturno.
+#### Parte 2: Configuração da Interface Online
+- Desenvolver uma interface que permita ajustar o comportamento dos semáforos, visualizar os dados captados pelo LDR e ativar/desativar o modo noturno.
 
-3. **Extra: Conexão com Ubidots**
-   - Implementar a conectividade de ambos os semáforos com o Ubidots, permitindo gerenciamento remoto por meio de dashboards.
+#### Extra: Conexão com Ubidots
+- Implementar a conectividade de ambos os semáforos com o Ubidots, permitindo gerenciamento remoto por meio de dashboards.
 
 ---
 
 ### **3. Materiais Utilizados**
 
-#### Hardware:
+#### 3.1 Hardware:
 - 2 x ESP32 (um para cada semáforo).
 - 6 x LEDs (2 conjuntos de vermelho, amarelo e verde).
-- 1 x Sensores LDR.
+- 1 x Sensor LDR.
 - 1 x Protoboard.
 - Resistores com diversas resistências.
 - Jumpers macho-macho de diversas cores.
 
-#### Software:
-- Arduino IDE para programação do ESP32.
-- Biblioteca WiFi e MQTT para conectividade.
-- Plataforma Ubidots 
+#### 3.2 Software:
+- **Arduino IDE** para programação do ESP32.
+- **Bibliotecas:** WiFi, MQTT, e Ticker.
+- **Plataforma Ubidots** para gerenciamento remoto.
 
 ---
 
-### 4. Estrutura do Código
+### **4. Estrutura do Código**
 
-O código foi estruturado para ser modular e organizado, facilitando manutenção e escalabilidade. As principais seções incluem:
+O código foi estruturado para ser modular e organizado, facilitando manutenção e escalabilidade. Abaixo estão as principais seções:
 
-#### 4.1 Configuração de Pinos e Conexão WiFi
+#### 4.1. Configuração de Pinos e Conexão WiFi
 Os pinos do ESP32 foram configurados para controlar os LEDs dos semáforos e o sensor LDR. A conexão WiFi utiliza credenciais definidas no código e suporta comunicação segura via MQTT com o HiveMQ.
 
 ```cpp
-const char* ssid = "Marco_Ruas";          // Nome da rede WiFi
-const char* password = "12345678";        // Senha da rede WiFi
-const char* mqtt_server = "hivemq.cloud"; // Endereço do broker MQTT
+const char* ssid = "Zoin";          // Nome da rede WiFi
+const char* password = "12345678";  // Senha da rede WiFi
+const char* mqtt_server = "706f3a6885be461ea18a14eeca8916ee.s1.eu.hivemq.cloud"; // Endereço do broker MQTT
 ```
 
-#### 4.2 Classe para Controle dos Semáforos
+#### 4.2. Classe para Controle dos Semáforos
 Foi criada uma classe para encapsular os métodos de controle dos estados do semáforo (verde, amarelo e vermelho). A modularidade permite reaproveitamento do código para múltiplos semáforos.
 
 ```cpp
@@ -114,8 +114,13 @@ class Semaforo {
 };
 ```
 
-#### 4.3 Modo Noturno
-O modo noturno é ativado automaticamente com base na leitura do LDR ou manualmente via mensagens MQTT. Durante este modo, os LEDs amarelos piscam alternadamente para sinalizar tráfego reduzido.
+#### 4.3. Controle do Ciclo dos Semáforos
+Os estados dos semáforos são controlados por meio de uma enumeração `EstadoSemaforo`, que define claramente os possíveis estados do sistema: `SEMAFORO1_VERDE`, `SEMAFORO1_AMARELO`, `SEMAFORO1_VERMELHO`, e assim por diante. Isso facilita a expansão e manutenção do código.
+
+Os tempos de transição entre os estados do semáforo são controlados por meio da biblioteca `Ticker`, garantindo uma temporização não bloqueante. Além disso, o `Ticker` também é utilizado para gerenciar o pisca-pisca dos LEDs amarelos no modo noturno.
+
+#### 4.4. Modo Noturno
+O modo noturno pode ser ativado automaticamente com base no valor do sensor LDR (luminosidade menor ou igual a 100) ou manualmente via comando MQTT (`noturno`). Durante este modo, os LEDs amarelos piscam alternadamente para sinalizar tráfego reduzido.
 
 ```cpp
 void iniciarModoNoturno() {
@@ -128,72 +133,51 @@ void iniciarModoNoturno() {
 }
 ```
 
-#### 4.4 Controle do Ciclo dos Semáforos
-O ciclo dos semáforos (verde, amarelo, vermelho) é gerenciado por uma máquina de estados. Cada estado possui uma duração configurável e transições controladas por um `Ticker`.
+Da mesma forma, o modo normal é restaurado automaticamente quando a luminosidade aumenta ou manualmente com o comando MQTT (`normal`).
 
-```cpp
-void gerenciarEstadoSemaforo() {
-  switch (estadoAtual) {
-    case SEMAFORO1_VERDE:
-      semaforo1.abrir();
-      semaforo2.fechar();
-      estadoAtual = SEMAFORO1_AMARELO;
-      timerSemaforo.once(3, gerenciarEstadoSemaforo);
-      break;
-    case SEMAFORO1_AMARELO:
-      semaforo1.esperar();
-      estadoAtual = SEMAFORO1_VERMELHO;
-      timerSemaforo.once(1, gerenciarEstadoSemaforo);
-      break;
-    // Outros estados...
-  }
-}
-```
+#### 4.5. Controle Manual dos Semáforos
+Os modos `semaforo1` e `semaforo2` permitem forçar um dos semáforos a permanecer no estado "verde", enquanto o outro é mantido no estado "vermelho". Esses modos são ativados via mensagens MQTT nos seguintes formatos:
+- **Mensagem:** `semaforo1` - Mantém o Semáforo 1 aberto.
+- **Mensagem:** `semaforo2` - Mantém o Semáforo 2 aberto.
 
-#### 4.5 Conectividade MQTT
-A integração com o HiveMQ permite controle remoto e transmissão de dados do sensor LDR. Mensagens MQTT podem ativar/desativar modos ou alterar estados manualmente.
+#### 4.6. Publicação e Assinatura de Tópicos MQTT
+O sistema utiliza o HiveMQ para enviar e receber mensagens. Os valores do sensor LDR são publicados no tópico `hivemqdemo/commands`. Comandos para os semáforos também são enviados ao mesmo tópico.
 
 ```cpp
 client.subscribe("hivemqdemo/commands");        // Tópico para comandos
-client.publish("hivemqdemo/ldr", ldrString.c_str()); // Publica valor do LDR
+client.publish("hivemqdemo/commands", ldrString.c_str()); // Publica valor do LDR
 ```
 
-#### 4.6 Integração com o Sensor LDR
+#### 4.7. Integração com o Sensor LDR
 O sensor LDR monitora a presença de veículos e a iluminação ambiente. Valores do LDR influenciam a ativação do modo noturno ou ajustes no comportamento dos semáforos.
 
 ```cpp
 int valorLDR = analogRead(PINO_LDR);
-if (valorLDR <= 2000) {
+if (valorLDR <= 100) {
   iniciarModoNoturno();  // Baixa luminosidade: ativa modo noturno
 } else {
   pararModoNoturno();    // Alta luminosidade: retorna ao modo normal
 }
 ```
----
-
-### **5. Conexão com Ubidots**
-
-- Cada semáforo está conectado a um ESP32 que envia dados captados pelo sensor LDR para o Ubidots.
-- A plataforma é configurada para exibir dashboards em tempo real, permitindo ajustes nos estados dos semáforos e visualização remota.
 
 ---
 
-### 6. Funcionamento Previsto
+### **5. Funcionamento Previsto**
 
-**Modo Normal**:  
-Os semáforos alternam automaticamente entre verde, amarelo e vermelho com tempos programados, ajustando o fluxo de acordo com a presença de veículos detectada pelo sensor LDR. Os dados captados são enviados ao Ubidots para visualização remota.
+#### 5.1.Modo Normal:
+- Os semáforos alternam automaticamente entre verde, amarelo e vermelho com tempos programados, ajustando o fluxo de acordo com a presença de veículos detectada pelo sensor LDR.
+- Os dados captados são enviados ao HiveMQ para visualização remota.
 
-**Modo Noturno**:  
-Os LEDs amarelos piscam alternadamente, indicando menor atividade no tráfego. Este modo é ativado automaticamente com base nos valores do LDR ou manualmente via MQTT.
+#### 5.2. Modo Noturno:
+- Os LEDs amarelos piscam alternadamente, indicando menor atividade no tráfego. Este modo é ativado automaticamente com base nos valores do LDR ou manualmente via MQTT.
 
-**Modo Forçado Semáforo 1**:  
-Permite manter o semáforo 1 (verde) aberto forçadamente enquanto o semáforo 2 permanece fechado (vermelho). Este estado pode ser ativado manualmente pela interface MQTT.
+#### 5.3. Modo Forçado Semáforo 1:
+- Mantém o semáforo 1 aberto (verde), enquanto o semáforo 2 permanece fechado (vermelho). Este estado pode ser ativado manualmente pela interface MQTT.
 
-**Modo Forçado Semáforo 2**:  
-Mantém o semáforo 2 (verde) aberto e o semáforo 1 fechado (vermelho), também ativado manualmente via MQTT.
+#### 5.3. Modo Forçado Semáforo 2:
+- Mantém o semáforo 2 aberto (verde) e o semáforo 1 fechado (vermelho), também ativado manualmente via MQTT.
 
 ---
 
-### Conclusão
-
-O projeto explora a inovação no gerenciamento de tráfego urbano, proporcionando quatro modos operacionais para diferentes cenários: fluxo automático, tráfego reduzido e controle manual. Essa abordagem integrada de sensores, conectividade MQTT e visualização em tempo real via Ubidots demonstra o potencial de soluções inteligentes para cidades modernas, otimizando eficiência e segurança no trânsito.
+### **6. Conexão com Ubidots**
+Cada semáforo está conectado a um ESP32 que envia dados captados pelo sensor LDR para o Ubidots. A plataforma é configurada permitir ajustes nos estados dos semáforos e visualização remota.
